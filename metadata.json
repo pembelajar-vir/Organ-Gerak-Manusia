@@ -1,0 +1,6 @@
+{
+  "name": "Flashcard Tantangan: Organ Gerak Manusia",
+  "description": "Aplikasi kuis dan flashcard interaktif IPAS Kelas 6 SD tentang organ gerak manusia dengan 100 soal berjenjang, sistem poin, dan leaderboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
