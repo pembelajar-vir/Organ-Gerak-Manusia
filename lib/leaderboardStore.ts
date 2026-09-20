@@ -81,7 +81,7 @@ function notify() {
 function getSnapshot(): string {
   if (typeof window !== 'undefined') {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
+    if (stored !== null) {
       memorySnapshot = stored;
     } else {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_LEADERBOARD));
@@ -114,6 +114,24 @@ export function useLeaderboard(): [LeaderboardEntry[], (entries: LeaderboardEntr
   };
 
   return [parsed, setEntries];
+}
+
+export function clearLeaderboard(): void {
+  const raw = JSON.stringify([]);
+  memorySnapshot = raw;
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(STORAGE_KEY, raw);
+  }
+  notify();
+}
+
+export function resetDefaultLeaderboard(): void {
+  const raw = JSON.stringify(DEFAULT_LEADERBOARD);
+  memorySnapshot = raw;
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(STORAGE_KEY, raw);
+  }
+  notify();
 }
 
 export function saveLeaderboardEntry(newEntry: LeaderboardEntry) {

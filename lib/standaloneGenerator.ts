@@ -312,7 +312,7 @@ export function generateStandaloneHTML(): string {
     <button class="btn btn-outline" onclick="openCPModal()">🎯 Capaian</button>
     <button class="btn btn-outline" onclick="openRangkumanModal()">📖 Rangkuman</button>
     <button class="btn btn-outline" onclick="openDeveloperModal()">👤 Pengembang</button>
-    <button class="btn btn-outline" id="bgm-toggle-btn" onclick="toggleBgmStandalone()">🎵 Musik: Off</button>
+    <button class="btn btn-outline" id="bgm-toggle-btn" onclick="toggleBgmStandalone()">🎵 Musik: On</button>
     <button class="btn btn-primary" onclick="toggleAudio()"><span id="audio-icon">🔊</span></button>
   </div>
 </header>
@@ -539,6 +539,22 @@ export function generateStandaloneHTML(): string {
     bgmStep++;
   }
 
+  function startBgmStandalone() {
+    if (bgmPlaying) return;
+    try {
+      const ctx = getAudio();
+      if (ctx && ctx.state === 'suspended') {
+        ctx.resume().catch(()=>{});
+      }
+      bgmPlaying = true;
+      bgmStep = 0;
+      if (bgmTimer) clearInterval(bgmTimer);
+      bgmTimer = setInterval(playBgmStep, 320);
+      const btn = document.getElementById('bgm-toggle-btn');
+      if (btn) btn.innerText = '🎵 Musik: On';
+    } catch(e){}
+  }
+
   function toggleBgmStandalone() {
     const btn = document.getElementById('bgm-toggle-btn');
     if (bgmPlaying) {
@@ -546,14 +562,25 @@ export function generateStandaloneHTML(): string {
       if (bgmTimer) clearInterval(bgmTimer);
       if (btn) btn.innerText = '🎵 Musik: Off';
     } else {
-      getAudio();
-      bgmPlaying = true;
-      bgmStep = 0;
-      if (bgmTimer) clearInterval(bgmTimer);
-      bgmTimer = setInterval(playBgmStep, 320);
-      if (btn) btn.innerText = '🎵 Musik: On';
+      startBgmStandalone();
     }
   }
+
+  // Otomatis putar musik saat website dibuka (atau sentuhan pertama jika diblokir peramban)
+  window.addEventListener('DOMContentLoaded', () => {
+    startBgmStandalone();
+    const resumeOnTouch = () => {
+      startBgmStandalone();
+      window.removeEventListener('pointerdown', resumeOnTouch);
+      window.removeEventListener('click', resumeOnTouch);
+      window.removeEventListener('touchstart', resumeOnTouch);
+      window.removeEventListener('keydown', resumeOnTouch);
+    };
+    window.addEventListener('pointerdown', resumeOnTouch, { once: true });
+    window.addEventListener('click', resumeOnTouch, { once: true });
+    window.addEventListener('touchstart', resumeOnTouch, { once: true });
+    window.addEventListener('keydown', resumeOnTouch, { once: true });
+  });
 
   function toggleAudio() {
     audioEnabled = !audioEnabled;

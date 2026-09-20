@@ -299,6 +299,11 @@ function bgmScheduler() {
   const beatLength = 60 / tempo; // ~0.652 seconds per beat
   const subBeatLength = beatLength / 2; // eighth notes
 
+  // Prevent burst scheduling if audio context was suspended
+  if (bgmNextNoteTime < ctx.currentTime) {
+    bgmNextNoteTime = ctx.currentTime + 0.05;
+  }
+
   // Look ahead 0.8 seconds to maintain continuous, jitter-free playback
   while (bgmNextNoteTime < ctx.currentTime + 0.8) {
     const patternIdx = Math.floor(bgmCurrentStep / 4) % BGM_PATTERNS.length;
@@ -334,6 +339,10 @@ function bgmScheduler() {
 export function startBgm() {
   const ctx = getAudioContext();
   if (!ctx) return;
+
+  if (ctx.state === 'suspended') {
+    ctx.resume().catch(() => {});
+  }
 
   if (bgmIsPlaying) return;
 
@@ -401,4 +410,40 @@ export function toggleBgm(): boolean {
     }
     return true;
   }
+}
+
+/**
+ * Automatically starts background music when the website opens.
+ * If browser autoplay policy suspends AudioContext, resumes on first user touch/click.
+ */
+export function initAutoBgm(): () => void {
+  if (typeof window === 'undefined') return () => {};
+
+  // Try immediate playback
+  startBgm();
+
+  const handleUserInteraction = () => {
+    const ctx = getAudioContext();
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume().then(() => {
+        if (!bgmIsPlaying) {
+          startBgm();
+        }
+      }).catch(() => {});
+    } else if (!bgmIsPlaying) {
+      startBgm();
+    }
+  };
+
+  window.addEventListener('pointerdown', handleUserInteraction, { capture: true, once: true });
+  window.addEventListener('click', handleUserInteraction, { capture: true, once: true });
+  window.addEventListener('keydown', handleUserInteraction, { capture: true, once: true });
+  window.addEventListener('touchstart', handleUserInteraction, { capture: true, once: true });
+
+  return () => {
+    window.removeEventListener('pointerdown', handleUserInteraction, { capture: true });
+    window.removeEventListener('click', handleUserInteraction, { capture: true });
+    window.removeEventListener('keydown', handleUserInteraction, { capture: true });
+    window.removeEventListener('touchstart', handleUserInteraction, { capture: true });
+  };
 }

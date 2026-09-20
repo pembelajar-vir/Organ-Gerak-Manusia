@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Trophy, Medal, Trash2, User, Search, Filter } from 'lucide-react';
+import { X, Trophy, Medal, Trash2, User, Search, Filter, AlertTriangle, RotateCcw, CheckCircle2 } from 'lucide-react';
 import { LeaderboardEntry } from '@/lib/types';
 import { playClickSound } from '@/lib/sound';
 import { useLeaderboard, DEFAULT_LEADERBOARD } from '@/lib/leaderboardStore';
@@ -17,12 +17,28 @@ export default function LeaderboardModal({ isOpen, onClose }: LeaderboardModalPr
   const [entries, setEntries] = useLeaderboard();
   const [filterLevel, setFilterLevel] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [showConfirmReset, setShowConfirmReset] = useState<boolean>(false);
+  const [notification, setNotification] = useState<string | null>(null);
 
-  const handleReset = () => {
-    if (confirm('Apakah Ibu/Bapak Guru yakin ingin mengosongkan riwayat papan peringkat untuk kelas ini?')) {
-      playClickSound();
-      setEntries(DEFAULT_LEADERBOARD);
-    }
+  const showToast = (msg: string) => {
+    setNotification(msg);
+    setTimeout(() => {
+      setNotification(null);
+    }, 3500);
+  };
+
+  const handleClearAll = () => {
+    playClickSound();
+    setEntries([]);
+    setShowConfirmReset(false);
+    showToast('Seluruh riwayat nilai siswa berhasil dikosongkan!');
+  };
+
+  const handleResetToDefault = () => {
+    playClickSound();
+    setEntries(DEFAULT_LEADERBOARD);
+    setShowConfirmReset(false);
+    showToast('Data contoh peringkat siswa berhasil dimuat ulang!');
   };
 
   const filteredEntries = entries
@@ -103,13 +119,85 @@ export default function LeaderboardModal({ isOpen, onClose }: LeaderboardModalPr
           </div>
         </div>
 
+        {/* Notification Toast */}
+        {notification && (
+          <div className="mx-4 sm:mx-6 mt-3 p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-800 text-xs sm:text-sm font-semibold flex items-center justify-between shadow-xs animate-in fade-in slide-in-from-top-1 duration-200">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>{notification}</span>
+            </div>
+            <button
+              onClick={() => setNotification(null)}
+              className="text-emerald-700 hover:text-emerald-900 text-xs px-2 py-0.5"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        {/* In-Modal Confirmation Reset Dialog */}
+        {showConfirmReset && (
+          <div className="mx-4 sm:mx-6 mt-3 p-4 bg-amber-50/90 border-2 border-amber-300 rounded-2xl shadow-md animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-xl bg-amber-200/70 text-amber-900 shrink-0 mt-0.5">
+                <AlertTriangle className="w-5 h-5 text-amber-700" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-bold text-sm text-slate-800">Konfirmasi Reset Data Kelas</h4>
+                <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                  Pilih tindakan pengaturan ulang data papan peringkat siswa untuk kelas ini:
+                </p>
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <button
+                    id="confirm-clear-all-btn"
+                    onClick={handleClearAll}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition shadow-xs"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Kosongkan Semua (0 Siswa)</span>
+                  </button>
+
+                  <button
+                    id="confirm-restore-default-btn"
+                    onClick={handleResetToDefault}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition shadow-xs"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Muat Data Contoh (5 Siswa)</span>
+                  </button>
+
+                  <button
+                    id="cancel-reset-btn"
+                    onClick={() => {
+                      playClickSound();
+                      setShowConfirmReset(false);
+                    }}
+                    className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-semibold transition"
+                  >
+                    Batal
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* List Content */}
         <div className="p-4 sm:p-6 overflow-y-auto space-y-2.5 flex-1">
           {filteredEntries.length === 0 ? (
             <div className="text-center py-10 text-slate-400">
               <User className="w-10 h-10 mx-auto mb-2 opacity-40" />
-              <p className="text-sm font-medium">Belum ada data siswa untuk filter ini.</p>
+              <p className="text-sm font-medium text-slate-600">Belum ada data siswa untuk filter ini.</p>
               <p className="text-xs text-slate-400 mt-1">Selesaikan kuis untuk mencatatkan nama di papan peringkat!</p>
+              {entries.length === 0 && (
+                <button
+                  onClick={handleResetToDefault}
+                  className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-xl text-xs font-bold transition"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Muat Ulang Data Contoh</span>
+                </button>
+              )}
             </div>
           ) : (
             filteredEntries.map((entry, idx) => {
@@ -184,11 +272,14 @@ export default function LeaderboardModal({ isOpen, onClose }: LeaderboardModalPr
         <div className="bg-slate-50 border-t border-slate-200 px-6 py-3.5 flex items-center justify-between">
           <button
             id="reset-leaderboard-btn"
-            onClick={handleReset}
-            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-rose-600 font-medium transition"
-            title="Reset data kelas"
+            onClick={() => {
+              playClickSound();
+              setShowConfirmReset((prev) => !prev);
+            }}
+            className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg text-slate-600 hover:text-rose-600 hover:bg-rose-50 transition border border-slate-200"
+            title="Buka panel reset data kelas"
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            <Trash2 className="w-3.5 h-3.5 text-rose-500" />
             <span>Reset Data Kelas</span>
           </button>
 

@@ -30,7 +30,8 @@ import {
   setSoundMuted, 
   playClickSound, 
   toggleBgm, 
-  useBgmStatus
+  useBgmStatus,
+  initAutoBgm
 } from '@/lib/sound';
 import { generateStandaloneHTML } from '@/lib/standaloneGenerator';
 import ConfettiCanvas from '@/components/ConfettiCanvas';
@@ -58,6 +59,14 @@ export default function HomePage() {
   const [isLeaderboardModalOpen, setIsLeaderboardModalOpen] = useState<boolean>(false);
   const [isDeveloperModalOpen, setIsDeveloperModalOpen] = useState<boolean>(false);
   const [materialInitialTab, setMaterialInitialTab] = useState<number>(1);
+
+  // Otomatis menyalakan musik latar saat website terbuka
+  useEffect(() => {
+    const cleanup = initAutoBgm();
+    return () => {
+      cleanup();
+    };
+  }, []);
 
   const toggleSound = () => {
     const next = !isAudioMuted;
